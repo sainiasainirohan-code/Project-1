@@ -1,0 +1,27 @@
+print("welcome to unit converter")
+print("""
+ 1.Convert kilometer to meter
+ 2.Convert kilogram to gram
+ 3.Convert celsius to fahrenheit
+ 4.Exit
+ """)
+while True:
+    choice=int(input("Enter your choice:"))
+    if choice==1:
+        km=float(input("Enter kilometers:"))
+        meter=km*1000
+        print("Metrs=",meter)
+    elif choice==2:
+        kg=float(input("Enter kilograms:"))
+        gram=kg*1000
+        print("Grams=",gram)
+    elif choice==3:
+        fahrenheit=float(input("Enter Farenheits:"))
+        cel=(fahrenheit-32)*5/9
+        print("celsius=",cel)
+    elif choice==4:
+        print("Exiting...")
+        break
+
+    else:
+        print("Select correct choice")

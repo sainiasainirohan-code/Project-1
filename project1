@@ -1,0 +1,512 @@
+import tkinter as tk
+from tkinter import messagebox
+from time import strftime
+import turtle as t
+import random
+import math
+import os
+
+class MainDashboard:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Multi-App Suite Dashboard")
+        self.root.geometry("1000x700")  # Resized gracefully for 7 side options
+        self.root.resizable(False, False)
+        
+        # Style Definitions
+        self.bg_sidebar = "#2C3E50"
+        self.bg_active = "#1ABC9C"
+        self.bg_content = "#ECF0F1"
+        self.font_menu = ("Arial", 11, "bold")
+        
+        # Track active app & elements
+        self.current_frame = None
+        self.nav_buttons = {}
+        self.game_running = False
+        
+        # Create Main Layout
+        self.sidebar = tk.Frame(self.root, bg=self.bg_sidebar, width=220)
+        self.sidebar.pack(side=tk.LEFT, fill=tk.Y)
+        self.sidebar.pack_propagate(False)
+        
+        self.content_area = tk.Frame(self.root, bg=self.bg_content)
+        self.content_area.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        
+        self.build_sidebar()
+        self.show_welcome_screen()
+
+    def build_sidebar(self):
+        title_lbl = tk.Label(self.sidebar, text="APPS MENU", font=("Arial", 16, "bold"), fg="white", bg=self.bg_sidebar, pady=20)
+        title_lbl.pack()
+        
+        apps = [
+            ("Secret Diary", self.load_diary_app),
+            ("Retro Game", self.load_game_app),
+            ("Calculator", self.load_calculator_app),
+            ("Secure Vault", self.load_vault_app),
+            ("Digital Clock", self.load_clock_app),
+            ("Unit Converter", self.load_converter_app),  # 6th App Added
+            ("Task Manager", self.load_tasks_app)        # 7th App Added
+        ]
+        
+        for name, command in apps:
+            btn = tk.Button(self.sidebar, text=name, font=self.font_menu, fg="white", bg=self.bg_sidebar, 
+                            activebackground=self.bg_active, activeforeground="white", bd=0, height=2, 
+                            command=command, anchor="w", padx=20)
+            btn.pack(fill=tk.X, pady=2)
+            self.nav_buttons[name] = btn
+
+    def clear_content_area(self):
+        self.game_running = False 
+        if self.current_frame:
+            self.current_frame.destroy()
+        for name, btn in self.nav_buttons.items():
+            btn.config(bg=self.bg_sidebar)
+
+    def set_active_button(self, name):
+        if name in self.nav_buttons:
+            self.nav_buttons[name].config(bg=self.bg_active)
+
+    def show_welcome_screen(self):
+        self.clear_content_area()
+        self.current_frame = tk.Frame(self.content_area, bg=self.bg_content)
+        self.current_frame.pack(fill=tk.BOTH, expand=True)
+        
+        lbl = tk.Label(self.current_frame, text="Welcome to your Multi-App Suite", font=("Arial", 22, "bold"), bg=self.bg_content, fg="#34495E")
+        lbl.pack(pady=180)
+        lbl_sub = tk.Label(self.current_frame, text="Select an application from the sidebar to get started.", font=("Arial", 12), bg=self.bg_content, fg="#7F8C8D")
+        lbl_sub.pack()
+
+    # SECRET DIARY
+    def load_diary_app(self):
+        self.clear_content_area()
+        self.set_active_button("Secret Diary")
+        
+        self.current_frame = tk.Frame(self.content_area, bg="#F2F4F4")
+        self.current_frame.pack(fill=tk.BOTH, expand=True)
+        
+        with open("diary.txt", "a") as f: pass
+        diary_password = "12345"
+        
+        login_frame = tk.Frame(self.current_frame, bg="#F2F4F4")
+        login_frame.pack(pady=100)
+        
+        tk.Label(login_frame, text="MY SECRET DIARY", font=("Arial", 18, "bold"), bg="#F2F4F4", fg="#2C3E50").pack(pady=10)
+        tk.Label(login_frame, text="Enter Password:", font=("Arial", 11), bg="#F2F4F4").pack()
+        pw_entry = tk.Entry(login_frame, show="*", font=("Arial", 12), width=20, justify="center")
+        pw_entry.pack(pady=5)
+        
+        def check_password():
+            if pw_entry.get() == diary_password:
+                login_frame.destroy()
+                build_diary_menu()
+            else:
+                messagebox.showerror("Error", "Wrong Password!")
+        
+        tk.Button(login_frame, text="Access Diary", command=check_password, bg="#3498DB", fg="white", font=("Arial", 11, "bold"), padx=10).pack(pady=10)
+
+        def build_diary_menu():
+            menu_frame = tk.Frame(self.current_frame, bg="#F2F4F4")
+            menu_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+            
+            tk.Label(menu_frame, text="DIARY WORKSPACE", font=("Arial", 16, "bold"), bg="#F2F4F4", fg="#2C3E50").pack(pady=10)
+            
+            txt_area = tk.Text(menu_frame, height=15, width=55, font=("Arial", 11))
+            txt_area.pack(pady=10)
+            
+            btn_container = tk.Frame(menu_frame, bg="#F2F4F4")
+            btn_container.pack(pady=5)
+            
+            def save_note():
+                note = txt_area.get("1.0", tk.END).strip()
+                if note:
+                    with open("diary.txt", "a") as file:
+                        file.write(note + "\n-\n")
+                    txt_area.delete("1.0", tk.END)
+                    messagebox.showinfo("Saved", "Note saved successfully!")
+                else:
+                    messagebox.showwarning("Empty", "Please write something first.")
+                    
+            def view_notes():
+                txt_area.delete("1.0", tk.END)
+                with open("diary.txt", "r") as file:
+                    content = file.read()
+                if content.strip() == "":
+                    txt_area.insert(tk.END, "Your diary is currently empty!\n")
+                else:
+                    txt_area.insert(tk.END, content)
+                    
+            def delete_all():
+                if messagebox.askyesno("Confirm Wiping", "Are you sure you want to permanently wipe your diary clean?"):
+                    with open("diary.txt", "w") as file:
+                        file.write("")
+                    txt_area.delete("1.0", tk.END)
+                    messagebox.showinfo("Deleted", "All notes deleted permanently!")
+
+            tk.Button(btn_container, text="Save Entry", command=save_note, bg="#2ECC71", fg="white", width=12, font=("Arial", 10, "bold")).grid(row=0, column=0, padx=5)
+            tk.Button(btn_container, text="View All Notes", command=view_notes, bg="#3498DB", fg="white", width=12, font=("Arial", 10, "bold")).grid(row=0, column=1, padx=5)
+            tk.Button(btn_container, text="Wipe Diary", command=delete_all, bg="#E74C3C", fg="white", width=12, font=("Arial", 10, "bold")).grid(row=0, column=2, padx=5)
+
+
+    #  RETRO  GAME
+    def load_game_app(self):
+        self.clear_content_area()
+        self.set_active_button("Retro Game")
+        
+        self.current_frame = tk.Frame(self.content_area, bg="black")
+        self.current_frame.pack(fill=tk.BOTH, expand=True)
+        
+        canvas = tk.Canvas(self.current_frame, width=600, height=600)
+        canvas.pack(pady=10)
+        
+        game_screen = t.TurtleScreen(canvas)
+        game_screen.bgcolor("lightblue")
+        game_screen.tracer(0)
+        
+        score = [0]
+        
+        score_display = t.RawTurtle(game_screen)
+        score_display.hideturtle()
+        score_display.penup()
+        score_display.goto(-260, 240)
+        score_display.write("Score: 0", font=("Arial", 16, "bold"))
+        
+        player = t.RawTurtle(game_screen)
+        player.shape("square")
+        player.color("green")
+        player.shapesize(3)
+        player.penup()
+        player.goto(0, -220)
+        
+        food = t.RawTurtle(game_screen)
+        food.shape("circle")
+        food.color("red")
+        food.penup()
+        food.goto(random.randint(-260, 260), 240)
+        
+        def left():
+            x = player.xcor() - 30
+            if x < -260: x = -260
+            player.setx(x)
+            
+        def right():
+            x = player.xcor() + 30
+            if x > 260: x = 260
+            player.setx(x)
+            
+        game_screen.listen()
+        game_screen.onkeypress(left, "Left")
+        game_screen.onkeypress(right, "Right")
+        
+        self.game_running = True
+        
+        def game_loop():
+            if not self.game_running:
+                return
+            y = food.ycor() - 5
+            food.sety(y)
+            
+            if player.distance(food) < 40:
+                score[0] += 1
+                score_display.clear()
+                score_display.write(f"Score: {score[0]}", font=("Arial", 16, "bold"))
+                food.goto(random.randint(-260, 260), 240)
+                
+            if food.ycor() < -260:
+                food.goto(random.randint(-260, 260), 240)
+                
+            game_screen.update()
+            self.root.after(20, game_loop)
+            
+        game_loop()
+
+    # SCINTIFIC CALCULATOR
+    def load_calculator_app(self):
+        self.clear_content_area()
+        self.set_active_button("Calculator")
+        
+        self.current_frame = tk.Frame(self.content_area, bg="BLACK")
+        self.current_frame.pack(fill=tk.BOTH, expand=True)
+        
+        self.reset_display = False
+        
+        entry = tk.Entry(self.current_frame, bd=5, font=('Arial', 20), justify='right', width=22, bg='LIGHTGREEN')
+        entry.pack(pady=20)
+        entry.insert(0, "0")
+        
+        btnFrame = tk.Frame(self.current_frame, bg="BLACK")
+        btnFrame.pack(padx=10, pady=5)
+        
+        def click(event):
+            current = entry.get()
+            button_text = event.widget["text"]
+            
+            if button_text == 'c':
+                entry.delete(0, tk.END)
+                entry.insert(tk.END, '0')
+                self.reset_display = False
+            elif button_text == '=':
+                try:
+                    expression = current.replace('%', '/100')
+                    expression = expression.replace("sin(", "math.sin(math.radians(")
+                    expression = expression.replace("cos(", "math.cos(math.radians(")
+                    expression = expression.replace("tan(", "math.tan(math.radians(")
+                    
+                    open_count = expression.count("(")
+                    close_count = expression.count(")")
+                    if open_count > close_count:
+                        expression += ")" * (open_count - close_count)
+                        
+                    result = eval(expression)
+                    if isinstance(result, float):
+                        result = round(result, 10)
+                        
+                    entry.delete(0, tk.END)
+                    entry.insert(tk.END, str(result))
+                    self.reset_display = True
+                except Exception:
+                    entry.delete(0, tk.END)
+                    entry.insert(tk.END, "Error")
+                    self.reset_display = True
+            elif button_text in ["sin", "cos", "tan"]:
+                if self.reset_display or current == "0":
+                    entry.delete(0, tk.END)
+                    current = ""
+                    self.reset_display = False
+                entry.delete(0, tk.END)
+                entry.insert(tk.END, current + button_text + "(")
+            else:
+                if self.reset_display:
+                    entry.delete(0, tk.END)
+                    current = ""
+                    self.reset_display = False
+                if current == '0' and button_text != ".":
+                    current = ""
+                operators = "+-*/%"
+                if current and current[-1] in operators and button_text in operators:
+                    current = current[:-1]
+                if current == "" and button_text in "*/%":
+                    return
+                entry.delete(0, tk.END)
+                entry.insert(tk.END, current + button_text)
+
+        buttons = [
+            ['c', '(', ')', '()'],
+            ['7', '8', '9', '/'],
+            ['4', '5', '6', '*'],
+            ['1', '2', '3', '-'],
+            ['.', '0', '%', '+'],
+            ["sin", "cos", "tan", "="]
+        ]
+        
+        for i in range(len(buttons)):
+            for j in range(len(buttons[i])):
+                btn = tk.Button(btnFrame, text=buttons[i][j], font=('Arial', 14), width=5, height=1, bg="#34495E", fg="white")
+                btn.grid(row=i, column=j, padx=8, pady=8)
+                btn.bind('<Button-1>', click)
+
+    #  SECURE VAULT
+    def load_vault_app(self):
+        self.clear_content_area()
+        self.set_active_button("Secure Vault")
+        
+        self.current_frame = tk.Frame(self.content_area, bg="#EAEDED")
+        self.current_frame.pack(fill=tk.BOTH, expand=True)
+        
+        inner_vault = tk.Frame(self.current_frame, bg="#EAEDED")
+        inner_vault.pack(pady=40)
+        
+        tk.Label(inner_vault, text="VAULT SECURITY SYSTEM", font=("Arial", 16, "bold"), bg="#EAEDED", fg="#2C3E50").pack(pady=10)
+        tk.Label(inner_vault, text="Password Key Input:", font=("Arial", 10), bg="#EAEDED").pack(anchor="w")
+        ent_pw = tk.Entry(inner_vault, show="*", font=("Arial", 12), width=30)
+        ent_pw.pack(pady=5)
+        
+        def set_pw():
+            with open("pass.txt", "w") as f:
+                f.write(ent_pw.get())
+            messagebox.showinfo("Done", "Password Saved Successfully!")
+            
+        tk.Button(inner_vault, text="1. Save New Master Password", command=set_pw, bg="#D35400", fg="white", font=("Arial", 10, "bold"), width=28).pack(pady=5)
+        tk.Label(inner_vault, text="Secret Protected Message Body:", font=("Arial", 10), bg="#EAEDED").pack(anchor="w", pady=(15, 0))
+        ent_msg = tk.Entry(inner_vault, font=("Arial", 12), width=30)
+        ent_msg.pack(pady=5)
+        
+        def save_msg():
+            if not os.path.exists("pass.txt"):
+                messagebox.showerror("Error", "No master password configured yet!")
+                return
+            with open("pass.txt", "r") as f:
+                saved_pw = f.read().strip()
+            if ent_pw.get() == saved_pw:
+                with open("data.txt", "w") as df:
+                    df.write(ent_msg.get())
+                messagebox.showinfo("Done", "Secret Message Stored Securely!")
+            else:
+                messagebox.showerror("Error", "Access Denied: Invalid Password Verification")
+                
+        def read_msg():
+            if not os.path.exists("pass.txt") or not os.path.exists("data.txt"):
+                messagebox.showerror("Error", "No saved records found to access!")
+                return
+            with open("pass.txt", "r") as f:
+                saved_pw = f.read().strip()
+            if ent_pw.get() == saved_pw:
+                with open("data.txt", "r") as df:
+                    content = df.read()
+                ent_msg.delete(0, tk.END)
+                ent_msg.insert(0, content)
+                messagebox.showinfo("Success", "Decrypted Secret Message loaded.")
+            else:
+                messagebox.showerror("Error", "Access Denied: Invalid Password Verification")
+
+        tk.Button(inner_vault, text="2. Lock & Save Message", command=save_msg, bg="#27AE60", fg="white", font=("Arial", 10, "bold"), width=28).pack(pady=5)
+        tk.Button(inner_vault, text="3. Decrypt & Read Message", command=read_msg, bg="#2980B9", fg="white", font=("Arial", 10, "bold"), width=28).pack(pady=5)
+        tk.Button(inner_vault, text="4. Clear Views / Exit App View", command=self.show_welcome_screen, bg="#7F8C8D", fg="white", font=("Arial", 10, "bold"), width=28).pack(pady=5)
+
+    # DIGITAL CLOCK
+    def load_clock_app(self):
+        self.clear_content_area()
+        self.set_active_button("Digital Clock")
+        
+        self.current_frame = tk.Frame(self.content_area, bg="#ECF0F1")
+        self.current_frame.pack(fill=tk.BOTH, expand=True)
+        
+        tk.Label(self.current_frame, text="DIGITAL CLOCK", font=("Arial", 18, "bold"), bg="#ECF0F1", fg="#2C3E50").pack(pady=(80, 20))
+        
+        clock_label = tk.Label(self.current_frame, font=('Calibri', 45, 'bold'), background='gray', foreground='black', padx=20, pady=20, bd=5, relief="groove")
+        clock_label.pack(anchor='center', pady=20)
+        
+        def update_time():
+            if not self.current_frame or not clock_label.winfo_exists():
+                return
+            time_string = strftime("%H:%M:%S %p\n%m/%d/%Y")
+            clock_label.config(text=time_string)
+            clock_label.after(1000, update_time)
+            
+        update_time()
+
+    #  UNIT CONVERTER 
+    def load_converter_app(self):
+        self.clear_content_area()
+        self.set_active_button("Unit Converter")
+        
+        self.current_frame = tk.Frame(self.content_area, bg="#E8F8F5")
+        self.current_frame.pack(fill=tk.BOTH, expand=True)
+        
+        container = tk.Frame(self.current_frame, bg="#E8F8F5")
+        container.pack(pady=50)
+        
+        tk.Label(container, text="UNIVERSAL UNIT CONVERTER", font=("Arial", 16, "bold"), bg="#E8F8F5", fg="#117A65").pack(pady=10)
+        
+        # Configuration setup fields
+        tk.Label(container, text="1. Enter Value to Convert:", font=("Arial", 11), bg="#E8F8F5").pack(pady=(10,0))
+        val_entry = tk.Entry(container, font=("Arial", 12), width=25, justify="center")
+        val_entry.pack(pady=5)
+        
+        tk.Label(container, text="2. Select Conversion Type:", font=("Arial", 11), bg="#E8F8F5").pack(pady=(10,0))
+        
+        # Conversion mode choice controller variables
+        conv_mode = tk.IntVar(value=1)
+        tk.Radiobutton(container, text="Kilometer to Meter", variable=conv_mode, value=1, bg="#E8F8F5", font=("Arial", 10)).pack(anchor="w", padx=30)
+        tk.Radiobutton(container, text="Kilogram to Gram", variable=conv_mode, value=2, bg="#E8F8F5", font=("Arial", 10)).pack(anchor="w", padx=30)
+        tk.Radiobutton(container, text="Celsius to Fahrenheit", variable=conv_mode, value=3, bg="#E8F8F5", font=("Arial", 10)).pack(anchor="w", padx=30)
+        tk.Radiobutton(container, text="Fahrenheit to Celsius", variable=conv_mode, value=4, bg="#E8F8F5", font=("Arial", 10)).pack(anchor="w", padx=30)
+        
+        res_lbl = tk.Label(container, text="Result: --", font=("Arial", 14, "bold"), bg="#E8F8F5", fg="#16A085")
+        res_lbl.pack(pady=20)
+        
+        def run_conversion():
+            try:
+                user_val = float(val_entry.get())
+                mode = conv_mode.get()
+                
+                if mode == 1:
+                    res = user_val * 1000
+                    res_lbl.config(text=f"Meters = {res:,.2f} m")
+                elif mode == 2:
+                    res = user_val * 1000
+                    res_lbl.config(text=f"Grams = {res:,.2f} g")
+                elif mode == 3:
+                    res = (user_val * 9/5) + 32
+                    res_lbl.config(text=f"Fahrenheit = {res:.2f} °F")
+                elif mode == 4:
+                    res = (user_val - 32) * 5/9
+                    res_lbl.config(text=f"Celsius = {res:.2f} °C")
+            except ValueError:
+                messagebox.showerror("Error", "Please input a valid number to convert.")
+                
+        tk.Button(container, text="Execute Conversion", command=run_conversion, bg="#1ABC9C", fg="white", font=("Arial", 11, "bold"), width=22).pack(pady=5)
+
+    #  TASK MANAGER 
+    def load_tasks_app(self):
+        self.clear_content_area()
+        self.set_active_button("Task Manager")
+        
+        self.current_frame = tk.Frame(self.content_area, bg="#FEF9E7")
+        self.current_frame.pack(fill=tk.BOTH, expand=True)
+        
+        container = tk.Frame(self.current_frame, bg="#FEF9E7")
+        container.pack(pady=30, fill=tk.BOTH, expand=True, padx=40)
+        
+        tk.Label(container, text="TASK MANAGER WORKSPACE", font=("Arial", 16, "bold"), bg="#FEF9E7", fg="#B7950B").pack(pady=10)
+        
+        # Load tasks array safe from local files
+        tasks = []
+        if os.path.exists("tasks.txt"):
+            with open("tasks.txt", "r") as file:
+                tasks = file.read().splitlines()
+                
+        # Listbox setup display
+        list_frame = tk.Frame(container)
+        list_frame.pack(pady=10)
+        
+        scrollbar = tk.Scrollbar(list_frame, orient=tk.VERTICAL)
+        task_listbox = tk.Listbox(list_frame, width=45, height=12, font=("Arial", 11), yscrollcommand=scrollbar.set, selectmode=tk.SINGLE)
+        scrollbar.config(command=task_listbox.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        task_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # Populate Listbox initially
+        for tsk in tasks:
+            task_listbox.insert(tk.END, tsk)
+            
+        # Entry layout field for fresh tasks
+        entry_frame = tk.Frame(container, bg="#FEF9E7")
+        entry_frame.pack(pady=5)
+        tk.Label(entry_frame, text="New Task Entry:", font=("Arial", 10), bg="#FEF9E7").grid(row=0, column=0, padx=5)
+        task_entry = tk.Entry(entry_frame, font=("Arial", 11), width=30)
+        task_entry.grid(row=0, column=1, padx=5)
+        
+        def add_task():
+            new_task = task_entry.get().strip()
+            if new_task:
+                task_listbox.insert(tk.END, new_task)
+                task_entry.delete(0, tk.END)
+            else:
+                messagebox.showwarning("Warning", "Task item cannot be completely blank.")
+                
+        def delete_task():
+            try:
+                selected_idx = task_listbox.curselection()[0]
+                task_listbox.delete(selected_idx)
+            except IndexError:
+                messagebox.showwarning("Selection Missing", "Please select a task from the list above to delete.")
+                
+        def save_tasks():
+            current_tasks = task_listbox.get(0, tk.END)
+            with open("tasks.txt", "w") as file:
+                file.write("\n".join(current_tasks))
+            messagebox.showinfo("Saved", "Task list sync saved successfully to tasks.txt!")
+
+        btn_frame = tk.Frame(container, bg="#FEF9E7")
+        btn_frame.pack(pady=15)
+        
+        tk.Button(btn_frame, text="Add Task", command=add_task, bg="#F1C40F", fg="black", font=("Arial", 10, "bold"), width=12).grid(row=0, column=0, padx=5)
+        tk.Button(btn_frame, text="Delete Selected", command=delete_task, bg="#E67E22", fg="white", font=("Arial", 10, "bold"), width=14).grid(row=0, column=1, padx=5)
+        tk.Button(btn_frame, text="Save To Disk", command=save_tasks, bg="#27AE60", fg="white", font=("Arial", 10, "bold"), width=12).grid(row=0, column=2, padx=5)
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = MainDashboard(root)
+    root.mainloop()
